@@ -1,0 +1,56 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql://tecc3463_jogoanatomia:tecc3463_jogoanatomia@mysql:3306/tecc3463_jogoanatomia
+      - SYNC_DATABASE_URL=mysql://tecc3463_jogoanatomia:tecc3463_jogoanatomia@mysql:3306/tecc3463_jogoanatomia
+      - SECRET_KEY=change-me
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+      - REFRESH_TOKEN_EXPIRE_MINUTES=4320
+      - JWT_ALGORITHM=HS256
+      - REDIS_URL=redis://redis:6379/0
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - FEATURE_FLAG_OSCE=true
+      - FEATURE_FLAG_SRS=true
+      - RATE_LIMIT_PER_MINUTE=120
+      - DEFAULT_PAGE_SIZE=20
+      - MAX_PAGE_SIZE=100
+      - LOG_LEVEL=INFO
+    depends_on:
+      - mysql
+      - redis
+      - otel-collector
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: tecc3463_jogoanatomia
+      MYSQL_USER: tecc3463_jogoanatomia
+      MYSQL_PASSWORD: tecc3463_jogoanatomia
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    command: ["--default-authentication-plugin=caching_sha2_password", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.94.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+
+volumes:
+  mysqldata:
