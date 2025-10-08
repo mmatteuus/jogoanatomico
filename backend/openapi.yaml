@@ -1,0 +1,1127 @@
+openapi: 3.1.0
+info:
+  title: Anatomy Pro API
+  version: 1.0.0
+  description: API REST para o jogo Anatomy Pro
+servers:
+  - url: https://api.anatomypro.local
+paths:
+  /v1/health/live:
+    get:
+      summary: Verifica se o serviço está vivo
+      responses:
+        '200':
+          description: Serviço respondendo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/health/ready:
+    get:
+      summary: Verifica se o serviço está pronto
+      responses:
+        '200':
+          description: Serviço pronto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /v1/auth/register:
+    post:
+      summary: Registra um novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /v1/auth/login:
+    post:
+      summary: Autentica usuário e retorna tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentials'
+      responses:
+        '200':
+          description: Tokens válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/auth/token:
+    post:
+      summary: Troca credenciais por tokens OAuth2
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Tokens válidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+  /v1/auth/refresh:
+    post:
+      summary: Atualiza o token de acesso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Tokens renovados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/auth/logout:
+    post:
+      summary: Finaliza sessão do usuário
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logout efetuado
+  /v1/users/me:
+    get:
+      summary: Obtém dados do usuário logado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    patch:
+      summary: Atualiza dados do usuário
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /v1/users/me/preferences:
+    post:
+      summary: Atualiza preferências do usuário
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceUpdate'
+      responses:
+        '200':
+          description: Preferências atualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /v1/users/me/summary:
+    get:
+      summary: Resumo de progresso do usuário
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resumo do perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileSummary'
+  /v1/dashboard/summary:
+    get:
+      summary: Dados do dashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estatísticas do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+  /v1/missions/daily:
+    get:
+      summary: Lista missões do dia
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Missões disponíveis
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionProgress'
+  /v1/missions/{missionId}/progress:
+    post:
+      summary: Incrementa progresso de missão
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: missionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissionProgressUpdate'
+      responses:
+        '200':
+          description: Progresso atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MissionProgress'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/campaigns:
+    get:
+      summary: Lista campanhas disponíveis
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de campanhas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Campaign'
+    post:
+      summary: Cria nova campanha
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreate'
+      responses:
+        '201':
+          description: Campanha criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/campaigns/lessons/{lessonId}/progress:
+    post:
+      summary: Atualiza progresso da lição
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lessonId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignProgressUpdate'
+      responses:
+        '202':
+          description: Progresso registrado
+  /v1/quizzes/sessions:
+    post:
+      summary: Cria sessão de quiz
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizSessionCreate'
+      responses:
+        '201':
+          description: Sessão iniciada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /v1/quizzes/sessions/{sessionId}/attempts:
+    post:
+      summary: Registra tentativa de pergunta
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizAttemptCreate'
+      responses:
+        '200':
+          description: Tentativa registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAttempt'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/quizzes/sessions/{sessionId}/complete:
+    post:
+      summary: Finaliza sessão de quiz
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration_seconds:
+                  type: integer
+                  minimum: 0
+              required:
+                - duration_seconds
+      responses:
+        '200':
+          description: Sessão concluída
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizSession'
+  /v1/leaderboard:
+    get:
+      summary: Obtém ranking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [global, organization, classroom, friends]
+        - name: reference_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ranking atual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leaderboard'
+  /v1/anatomy/structures:
+    get:
+      summary: Lista estruturas anatômicas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: system
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estruturas encontradas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnatomyStructure'
+    post:
+      summary: Cria estrutura anatômica
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnatomyStructureCreate'
+      responses:
+        '201':
+          description: Estrutura criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnatomyStructure'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/anatomy/structures/{structureId}:
+    get:
+      summary: Detalha estrutura anatômica
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: structureId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Estrutura
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnatomyStructure'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/anatomy/structures/{structureId}/layers:
+    get:
+      summary: Lista camadas da estrutura
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: structureId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Camadas cadastradas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnatomyLayer'
+  /v1/anatomy/assets:
+    post:
+      summary: Upload de asset anatômico
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: Asset recebido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path:
+                    type: string
+  /v1/classrooms:
+    post:
+      summary: Cria sala de aula
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassroomCreate'
+      responses:
+        '201':
+          description: Sala criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Classroom'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/classrooms/enroll:
+    post:
+      summary: Entra em sala via código
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentRequest'
+      responses:
+        '200':
+          description: Matrícula realizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Classroom'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/classrooms/{classroomId}/roster:
+    get:
+      summary: Lista alunos da sala
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: classroomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de alunos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassroomRoster'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/webhooks:
+    post:
+      summary: Cria assinatura de webhook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookSubscription'
+      responses:
+        '201':
+          description: Assinatura criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+    get:
+      summary: Lista assinaturas de webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: event
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Assinaturas ativas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+  /v1/webhooks/test:
+    post:
+      summary: Dispara teste de webhook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookDelivery'
+      responses:
+        '202':
+          description: Entrega agendada
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Token inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Acesso negado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status_code:
+          type: integer
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        profile_type:
+          type: string
+        role:
+          type: string
+        xp:
+          type: integer
+        streak:
+          type: integer
+        energy:
+          type: integer
+        elo_rating:
+          type: integer
+        preferences:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    UserCreate:
+      type: object
+      required: [email, password, display_name, profile_type]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        display_name:
+          type: string
+        profile_type:
+          type: string
+          enum: [student, professional, professor, guest]
+    UserUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+        preferences:
+          type: object
+        energy:
+          type: integer
+          minimum: 0
+    PreferenceUpdate:
+      type: object
+      properties:
+        dark_mode:
+          type: boolean
+        language:
+          type: string
+        notifications:
+          type: boolean
+    AuthCredentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+    ProfileSummary:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        systems_progress:
+          type: object
+          additionalProperties:
+            type: number
+        daily_missions_completed:
+          type: integer
+        weekly_missions_completed:
+          type: integer
+    DashboardSummary:
+      type: object
+      properties:
+        xp:
+          type: integer
+        streak:
+          type: integer
+        energy:
+          type: integer
+        elo_rating:
+          type: integer
+        missions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissionProgress'
+        systems:
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemProgress'
+        active_campaign:
+          type: object
+          nullable: true
+    SystemProgress:
+      type: object
+      properties:
+        system:
+          type: string
+        completion_rate:
+          type: number
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        xp_reward:
+          type: integer
+        target:
+          type: integer
+        frequency:
+          type: string
+        category:
+          type: string
+    MissionProgress:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mission:
+          $ref: '#/components/schemas/Mission'
+        progress:
+          type: integer
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    MissionProgressUpdate:
+      type: object
+      properties:
+        increment:
+          type: integer
+          default: 1
+    CampaignLesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order:
+          type: integer
+        title:
+          type: string
+        content_url:
+          type: string
+        duration_minutes:
+          type: integer
+        xp_reward:
+          type: integer
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        anatomy_system:
+          type: string
+        recommended_level:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignLesson'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CampaignCreate:
+      type: object
+      required: [title, description, anatomy_system, recommended_level, lessons]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        anatomy_system:
+          type: string
+        recommended_level:
+          type: integer
+        lessons:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampaignLesson'
+    CampaignProgressUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [not_started, in_progress, completed]
+        score:
+          type: number
+          nullable: true
+    QuizSessionCreate:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [sprint, campaign, osce, srs]
+        system:
+          type: string
+          nullable: true
+        difficulty:
+          type: string
+          nullable: true
+        limit:
+          type: integer
+          default: 10
+    QuizSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mode:
+          type: string
+        system:
+          type: string
+          nullable: true
+        score:
+          type: number
+        duration_seconds:
+          type: integer
+        completed:
+          type: boolean
+    QuizAttemptCreate:
+      type: object
+      required: [question_id, option_id]
+      properties:
+        question_id:
+          type: string
+          format: uuid
+        option_id:
+          type: string
+          format: uuid
+    QuizAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question_id:
+          type: string
+          format: uuid
+        selected_option_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_correct:
+          type: boolean
+    LeaderboardEntry:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        xp:
+          type: integer
+        streak:
+          type: integer
+        rank:
+          type: integer
+        avatar:
+          type: string
+          nullable: true
+    Leaderboard:
+      type: object
+      properties:
+        scope:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+        generated_at:
+          type: string
+          format: date-time
+    AnatomyStructure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        latin_name:
+          type: string
+          nullable: true
+        system:
+          type: string
+        region:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        asset_uri:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AnatomyStructureCreate:
+      type: object
+      required: [name, system, region, description]
+      properties:
+        name:
+          type: string
+        latin_name:
+          type: string
+          nullable: true
+        system:
+          type: string
+        region:
+          type: string
+        description:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        asset_uri:
+          type: string
+          nullable: true
+    AnatomyLayer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        structure_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        visible:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Classroom:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        organization_id:
+          type: string
+          format: uuid
+          nullable: true
+        invite_code:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ClassroomCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        organization_id:
+          type: string
+          format: uuid
+          nullable: true
+    EnrollmentRequest:
+      type: object
+      required: [invite_code]
+      properties:
+        invite_code:
+          type: string
+    ClassroomRoster:
+      type: object
+      properties:
+        classroom:
+          $ref: '#/components/schemas/Classroom'
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    WebhookSubscription:
+      type: object
+      required: [target_url, event]
+      properties:
+        target_url:
+          type: string
+          format: uri
+        secret:
+          type: string
+          nullable: true
+        event:
+          type: string
+    Webhook:
+      allOf:
+        - $ref: '#/components/schemas/WebhookSubscription'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            is_active:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    WebhookDelivery:
+      type: object
+      required: [event, payload]
+      properties:
+        event:
+          type: string
+        payload:
+          type: object
