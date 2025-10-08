@@ -33,7 +33,7 @@ from app.main import create_app
 
 config.get_settings.cache_clear()
 settings = config.get_settings()
-engine = create_async_engine(settings.database_url, future=True)
+engine = create_async_engine(settings.async_database_url, future=True)
 AsyncSessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 

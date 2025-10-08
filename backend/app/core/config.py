@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Any, List, Literal, Sequence
+from typing import Any, ClassVar, List, Literal, Sequence
 
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL, make_url
 
 
 class FeatureFlags(BaseModel):
@@ -32,7 +33,16 @@ class Settings(BaseSettings):
 
     # database
     database_url: str = Field(alias="DATABASE_URL")
-    sync_database_url: str = Field(alias="SYNC_DATABASE_URL")
+    sync_database_url: str | None = Field(default=None, alias="SYNC_DATABASE_URL")
+
+    stack_project_id: str | None = Field(default=None, alias="STACK_PROJECT_ID")
+    stack_jwks_url: str | None = Field(default=None, alias="STACK_JWKS_URL")
+    stack_allowed_audiences: Sequence[str] = Field(
+        default_factory=list, alias="STACK_ALLOWED_AUDIENCES"
+    )
+    stack_allowed_issuers: Sequence[str] = Field(
+        default_factory=list, alias="STACK_ALLOWED_ISSUERS"
+    )
 
     # cache
     redis_url: str = Field(alias="REDIS_URL")
@@ -56,6 +66,29 @@ class Settings(BaseSettings):
         default_factory=lambda: ["anatomy-platform@mtsferreira.dev"], alias="SERVICE_OWNERS"
     )
 
+    _async_driver: ClassVar[str] = "postgresql+asyncpg"
+    _sync_driver: ClassVar[str] = "postgresql+psycopg"
+
+    @staticmethod
+    def _ensure_driver(url: str, driver: str) -> str:
+        sa_url: URL = make_url(url)
+        if sa_url.drivername == driver:
+            return url
+        sa_url = sa_url.set(drivername=driver)
+        return sa_url.render_as_string(hide_password=False)
+
+    @property
+    def async_database_url(self) -> str:
+        return self._ensure_driver(self.database_url, self._async_driver)
+
+    @property
+    def sync_database_url_value(self) -> str:
+        return self.sync_database_url or self.database_url
+
+    @property
+    def sync_database_url_with_driver(self) -> str:
+        return self._ensure_driver(self.sync_database_url_value, self._sync_driver)
+
     @property
     def feature_flags(self) -> FeatureFlags:
         return FeatureFlags(
@@ -67,6 +100,17 @@ class Settings(BaseSettings):
         if isinstance(self.cors_origins, str):
             origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
             object.__setattr__(self, "cors_origins", origins)
+
+        if isinstance(self.stack_allowed_audiences, str):
+            audiences = [aud.strip() for aud in self.stack_allowed_audiences.split(",") if aud.strip()]
+            object.__setattr__(self, "stack_allowed_audiences", audiences)
+
+        if isinstance(self.stack_allowed_issuers, str):
+            issuers = [iss.strip() for iss in self.stack_allowed_issuers.split(",") if iss.strip()]
+            object.__setattr__(self, "stack_allowed_issuers", issuers)
+
+        if not self.stack_allowed_audiences and self.stack_project_id:
+            object.__setattr__(self, "stack_allowed_audiences", [self.stack_project_id])
 
 
 @lru_cache

@@ -33,6 +33,18 @@ docker compose up --build
 
 A API estará disponível em `http://localhost:8000`. O Swagger UI pode ser acessado em `http://localhost:8000/docs`.
 
+## Integração com banco Neon
+
+- Solicite no painel Neon uma connection string para o projeto (ex.: `postgresql://...neon.tech/neondb?sslmode=require`).
+- No arquivo `.env`, informe `DATABASE_URL` com a string recebida. O serviço converte automaticamente para o driver assíncrono `asyncpg` e configura `pool_pre_ping` e `NullPool` para respeitar os limites serverless do Neon.
+- O `sslmode=require` é reconhecido e mapeado para conexões TLS (`ssl=True`). Caso deseje uma string diferente para o Alembic, defina `SYNC_DATABASE_URL`; se omitido, o mesmo valor de `DATABASE_URL` é reutilizado com o driver `psycopg`.
+- Para ambientes que utilizam o Stack Auth, configure também:
+  - `STACK_PROJECT_ID`
+  - `STACK_JWKS_URL` (por exemplo `https://api.stack-auth.com/api/v1/projects/<id>/.well-known/jwks.json`)
+  - `STACK_ALLOWED_AUDIENCES` e `STACK_ALLOWED_ISSUERS` caso seja necessário restringir a validação.
+
+> **Importante**: nunca versione secrets reais. Utilize `.env.local` ou variáveis de ambiente seguras nos ambientes gerenciados.
+
 ## Estrutura do Projeto
 
 - `app/core`: configuração, segurança, eventos
