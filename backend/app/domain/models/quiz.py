@@ -1,8 +1,7 @@
-from __future__ import annotations
-
-import enum
+﻿import enum
 import uuid
 
+from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship
 
 from .base import BaseSQLModel
@@ -29,7 +28,7 @@ class QuizQuestion(BaseSQLModel, table=True):
     difficulty: DifficultyLevel = Field(default=DifficultyLevel.medium)
     media_url: str | None = Field(default=None)
 
-    options: list["QuizOption"] = Relationship(back_populates="question")
+    options: Mapped[list["QuizOption"]] = Relationship(back_populates="question")
 
 
 class QuizOption(BaseSQLModel, table=True):
@@ -39,4 +38,4 @@ class QuizOption(BaseSQLModel, table=True):
     label: str = Field(nullable=False)
     is_correct: bool = Field(default=False)
 
-    question: QuizQuestion = Relationship(back_populates="options")
+    question: Mapped["QuizQuestion"] = Relationship(back_populates="options")

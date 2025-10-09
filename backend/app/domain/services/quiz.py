@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.domain.models import (
@@ -24,12 +26,12 @@ async def create_session(
     system_filter: str | None = None,
     difficulty: DifficultyLevel | None = None,
     limit: int = 10,
-) -> QuizSession:
+) -> tuple[QuizSession, list[QuizQuestion]]:
     quiz_session = QuizSession(user_id=user.id, mode=mode, system=system_filter)
     session.add(quiz_session)
     await session.flush()
 
-    query = select(QuizQuestion)
+    query = select(QuizQuestion).options(selectinload(QuizQuestion.options))
     if system_filter:
         query = query.where(QuizQuestion.anatomy_system == system_filter)
     if difficulty:
@@ -46,7 +48,7 @@ async def create_session(
     session.add(quiz_session)
     await session.commit()
     await session.refresh(quiz_session)
-    return quiz_session
+    return quiz_session, questions
 
 
 async def get_session(session: AsyncSession, session_id: uuid.UUID) -> QuizSession | None:

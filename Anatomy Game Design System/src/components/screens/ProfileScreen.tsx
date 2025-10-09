@@ -1,153 +1,122 @@
-import { ArrowLeft, Trophy, Flame, Target, Award, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Flame, Medal, Target, TrendingUp, Trophy } from 'lucide-react';
+
+import { ProfileSummary } from '../../lib/api-types';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { mockUser, mockBadges } from '../../lib/mock-data';
 
 interface ProfileScreenProps {
+  summary: ProfileSummary | null;
   onBack: () => void;
 }
 
-export function ProfileScreen({ onBack }: ProfileScreenProps) {
+export function ProfileScreen({ summary, onBack }: ProfileScreenProps) {
+  const user = summary?.user;
+  const systemProgress = summary?.systems_progress ?? {};
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border">
         <div className="max-w-3xl mx-auto p-4">
           <div className="flex items-center gap-3 mb-6">
             <Button variant="ghost" size="icon" onClick={onBack}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h2>Perfil</h2>
+            <h2 className="text-lg font-semibold">Perfil</h2>
           </div>
 
-          {/* Profile Header */}
-          <div className="flex flex-col items-center text-center space-y-4 pb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-4xl">
-              👤
-            </div>
-            <div>
-              <h3>Estudante Anatomia</h3>
-              <p className="text-muted-foreground">Nível {mockUser.level}</p>
-            </div>
+          {user ? (
+            <div className="flex flex-col items-center text-center space-y-4 pb-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-2xl font-semibold text-white">
+                {user.display_name.slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">{user.display_name}</h3>
+                <p className="text-sm text-muted-foreground capitalize">{user.profile_type}</p>
+              </div>
+              <div className="w-full max-w-xs">
+                <div className="flex justify-between text-xs mb-1 text-muted-foreground">
+                  <span>XP total</span>
+                  <span>{user.xp.toLocaleString('pt-BR')} XP</span>
+                </div>
+                <Progress value={Math.min((user.xp % 5000) / 50, 100)} className="h-2" />
+              </div>
 
-            {/* XP Progress */}
-            <div className="w-full max-w-xs">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">XP</span>
-                <span>{mockUser.xp} / 3000</span>
-              </div>
-              <Progress value={(mockUser.xp / 3000) * 100} className="h-3" />
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 w-full max-w-md">
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-1" />
-                <div className="text-xl">{mockUser.rank}</div>
-                <div className="text-xs text-muted-foreground">Elo</div>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <Flame className="w-6 h-6 text-orange-500 mx-auto mb-1" />
-                <div className="text-xl">{mockUser.streak}</div>
-                <div className="text-xs text-muted-foreground">Sequência</div>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-center">
-                <Target className="w-6 h-6 text-primary mx-auto mb-1" />
-                <div className="text-xl">89%</div>
-                <div className="text-xs text-muted-foreground">Acertos</div>
+              <div className="grid grid-cols-3 gap-4 w-full max-w-md">
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <Trophy className="w-6 h-6 text-yellow-500 mx-auto mb-1" />
+                  <div className="text-lg font-semibold">{user.elo_rating}</div>
+                  <div className="text-xs text-muted-foreground">Elo</div>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <Flame className="w-6 h-6 text-orange-500 mx-auto mb-1" />
+                  <div className="text-lg font-semibold">{user.streak}</div>
+                  <div className="text-xs text-muted-foreground">Sequencia</div>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <Target className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
+                  <div className="text-lg font-semibold">{summary?.daily_missions_completed ?? 0}</div>
+                  <div className="text-xs text-muted-foreground">Missoes hoje</div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-sm text-muted-foreground text-center pb-6">
+              Carregando informacoes do perfil...
+            </div>
+          )}
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto p-4 space-y-6 pb-24">
-        <Tabs defaultValue="stats" className="space-y-4">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="stats">Estatísticas</TabsTrigger>
-            <TabsTrigger value="badges">Badges</TabsTrigger>
-            <TabsTrigger value="history">Histórico</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="stats" className="space-y-4">
-            {/* System Mastery */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Domínio por Sistema</CardTitle>
-                <CardDescription>Seu progresso em cada sistema anatômico</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {Object.entries(mockUser.systemProgress).map(([system, progress]) => (
-                  <div key={system}>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="capitalize">{system}</span>
-                      <span>{progress}%</span>
-                    </div>
-                    <Progress value={progress} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Dominio por sistema</CardTitle>
+            <CardDescription>Acompanhe sua evolucao em cada trilha</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Object.keys(systemProgress).length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Complete quizzes para gerar estatisticas de progresso.
+              </p>
+            ) : (
+              Object.entries(systemProgress).map(([system, value]) => (
+                <div key={system}>
+                  <div className="flex justify-between text-sm mb-1 capitalize">
+                    <span>{system}</span>
+                    <span>{Math.round(value * 100)}%</span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Atividade Recente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                    <TrendingUp className="w-5 h-5 text-green-500" />
-                    <div className="flex-1">
-                      <p className="text-sm">Sprint - Sistema Esquelético</p>
-                      <p className="text-xs text-muted-foreground">8/10 corretas · +400 XP</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Hoje</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                    <Trophy className="w-5 h-5 text-yellow-500" />
-                    <div className="flex-1">
-                      <p className="text-sm">Campanha - Osteologia</p>
-                      <p className="text-xs text-muted-foreground">Lição 18 completa · +200 XP</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Ontem</span>
-                  </div>
+                  <Progress value={value * 100} className="h-2" />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              ))
+            )}
+          </CardContent>
+        </Card>
 
-          <TabsContent value="badges" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {mockBadges.map((badge) => (
-                <Card
-                  key={badge.id}
-                  className={badge.earned ? 'bg-gradient-to-br from-primary/5 to-primary/10' : 'opacity-50'}
-                >
-                  <CardContent className="p-6 text-center">
-                    <div className="text-4xl mb-2">
-                      {badge.earned ? '🏆' : '🔒'}
-                    </div>
-                    <h4 className="mb-1">{badge.name}</h4>
-                    <p className="text-xs text-muted-foreground">{badge.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="history">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">
-                  Histórico completo de atividades em desenvolvimento
+        <Card>
+          <CardHeader>
+            <CardTitle>Atividade recente</CardTitle>
+            <CardDescription>Resumo das ultimas conquistas registradas</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Novas missoes concluidas</p>
+                <p className="text-xs text-muted-foreground">
+                  {summary?.daily_missions_completed ?? 0} missoes diarias  -  {summary?.weekly_missions_completed ?? 0} semanais
                 </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40">
+              <Medal className="w-5 h-5 text-amber-500" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Streak atual</p>
+                <p className="text-xs text-muted-foreground">{user?.streak ?? 0} dias consecutivos estudando</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

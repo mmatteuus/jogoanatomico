@@ -1,38 +1,26 @@
-import { ArrowLeft, Lock, CheckCircle2, Play } from 'lucide-react';
+import { ArrowLeft, BookOpenCheck } from 'lucide-react';
+
+import { Campaign } from '../../lib/api-types';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Progress } from '../ui/progress';
-import { mockCampaigns } from '../../lib/mock-data';
 
 interface CampaignScreenProps {
+  token: string;
+  campaigns: Campaign[];
   onBack: () => void;
   onStartLesson: () => void;
 }
 
-export function CampaignScreen({ onBack, onStartLesson }: CampaignScreenProps) {
-  const getSystemColor = (system: string) => {
-    switch (system) {
-      case 'skeletal': return 'bg-gray-500';
-      case 'muscular': return 'bg-red-500';
-      case 'nervous': return 'bg-purple-500';
-      case 'vascular': return 'bg-rose-500';
-      default: return 'bg-primary';
-    }
-  };
+const COLORS = ['bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-rose-500', 'bg-orange-500'];
 
-  const getSystemIcon = (system: string) => {
-    switch (system) {
-      case 'skeletal': return '🦴';
-      case 'muscular': return '💪';
-      case 'nervous': return '🧠';
-      case 'vascular': return '❤️';
-      default: return '📚';
-    }
-  };
+export function CampaignScreen({ campaigns, onBack, onStartLesson }: CampaignScreenProps) {
+  const items = campaigns.map((campaign, index) => ({
+    ...campaign,
+    color: COLORS[index % COLORS.length],
+  }));
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-3xl mx-auto p-4">
           <div className="flex items-center gap-3">
@@ -40,88 +28,43 @@ export function CampaignScreen({ onBack, onStartLesson }: CampaignScreenProps) {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h2>Campanha</h2>
-              <p className="text-sm text-muted-foreground">Progressão por sistemas</p>
+              <h2 className="text-lg font-semibold">Campanhas</h2>
+              <p className="text-sm text-muted-foreground">Percorra sequencias guiadas para dominar cada sistema.</p>
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto p-4 space-y-4 pb-24">
-        {/* Map Progress */}
-        <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3>Sua Jornada</h3>
-              <span className="text-sm text-muted-foreground">53% completo</span>
-            </div>
-            <Progress value={53} className="h-2" />
-          </CardContent>
-        </Card>
-
-        {/* Campaign List */}
-        <div className="space-y-6">
-          {mockCampaigns.map((campaign, index) => (
-            <div key={campaign.id} className="relative">
-              {/* Connector Line */}
-              {index < mockCampaigns.length - 1 && (
-                <div className="absolute left-8 top-16 w-0.5 h-12 bg-border" />
-              )}
-
-              <Card className={campaign.unlocked ? 'hover:shadow-md transition-shadow' : 'opacity-60'}>
-                <CardHeader>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-16 h-16 rounded-xl ${getSystemColor(campaign.system)} bg-opacity-10 flex items-center justify-center text-3xl flex-shrink-0`}>
-                      {campaign.unlocked ? getSystemIcon(campaign.system) : <Lock className="w-8 h-8 text-muted-foreground" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <CardTitle>{campaign.title}</CardTitle>
-                          <CardDescription>
-                            {campaign.completedLessons}/{campaign.totalLessons} lições
-                          </CardDescription>
-                        </div>
-                        {campaign.progress === 100 && (
-                          <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Progress value={campaign.progress} className="mb-4 h-2" />
-                  <Button
-                    className="w-full"
-                    disabled={!campaign.unlocked}
-                    onClick={onStartLesson}
-                  >
-                    {campaign.unlocked ? (
-                      <>
-                        <Play className="w-4 h-4 mr-2" />
-                        {campaign.progress === 0 ? 'Começar' : 'Continuar'}
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 mr-2" />
-                        Bloqueado
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          ))}
-        </div>
-
-        {/* Info Card */}
-        <Card className="bg-muted/50">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Complete cada campanha para desbloquear a próxima e ganhar badges exclusivos!
-            </p>
-          </CardContent>
-        </Card>
+        {items.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Ainda nao ha campanhas registradas. Cadastre aulas no backend para disponibiliza-las aos alunos.
+            </CardContent>
+          </Card>
+        ) : (
+          items.map((campaign) => (
+            <Card key={campaign.id} className="hover:shadow transition-shadow">
+              <CardHeader className="flex items-start gap-4">
+                <div className={`w-14 h-14 rounded-lg ${campaign.color} bg-opacity-10 flex items-center justify-center`}>
+                  <BookOpenCheck className={`${campaign.color.replace('bg-', 'text-')} w-6 h-6`} />
+                </div>
+                <div className="flex-1">
+                  <CardTitle>{campaign.title}</CardTitle>
+                  <CardDescription>{campaign.description}</CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  {campaign.lessons.length} licoes  -  Sistema: {campaign.anatomy_system}
+                </div>
+                <Button className="w-full" onClick={onStartLesson}>
+                  Iniciar
+                </Button>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </main>
     </div>
   );

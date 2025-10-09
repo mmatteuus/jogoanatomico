@@ -5,7 +5,7 @@ import string
 import uuid
 from typing import List
 
-from sqlalchemy import select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.domain.models import Classroom, ClassroomMembership, User

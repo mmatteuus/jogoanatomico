@@ -18,11 +18,10 @@ logger = get_logger(__name__)
 def _build_engine_kwargs(url: str) -> dict[str, Any]:
     sa_url = make_url(url)
     kwargs: dict[str, Any] = {"echo": False, "future": True}
+    connect_args: dict[str, Any] = {}
 
     if sa_url.get_backend_name() == "postgresql":
         kwargs["pool_pre_ping"] = True
-
-        connect_args: dict[str, Any] = {}
         hostname = sa_url.host or ""
         sslmode = sa_url.query.get("sslmode")
 
@@ -33,8 +32,14 @@ def _build_engine_kwargs(url: str) -> dict[str, Any]:
         if isinstance(sslmode, str) and sslmode.lower() == "require":
             connect_args.setdefault("ssl", True)
 
-        if connect_args:
-            kwargs["connect_args"] = connect_args
+    elif sa_url.get_backend_name() == "mysql":
+        kwargs["pool_pre_ping"] = True
+        kwargs.setdefault("pool_recycle", 3600)
+        if "charset" not in sa_url.query:
+            connect_args.setdefault("charset", "utf8mb4")
+
+    if connect_args:
+        kwargs["connect_args"] = connect_args
 
     return kwargs
 

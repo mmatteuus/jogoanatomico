@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.domain.models import DifficultyLevel
+from app.domain.models import DifficultyLevel, QuestionType
 from app.domain.models.progress import QuizMode
 
 
@@ -16,12 +16,27 @@ class QuizSessionCreate(BaseModel):
     limit: int = Field(default=10, le=50)
 
 
+class QuizOptionChoice(BaseModel):
+    id: uuid.UUID
+    label: str
+
+
+class QuizQuestionWithOptions(BaseModel):
+    id: uuid.UUID
+    prompt: str
+    anatomy_system: str
+    type: QuestionType
+    difficulty: DifficultyLevel
+    options: List[QuizOptionChoice]
+
+
 class QuizSessionRead(BaseModel):
     id: uuid.UUID
     mode: QuizMode
     score: float
     duration_seconds: int
     completed: bool
+    questions: List[QuizQuestionWithOptions]
 
 
 class QuizAttemptCreate(BaseModel):

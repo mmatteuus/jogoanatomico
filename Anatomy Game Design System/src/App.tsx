@@ -1,129 +1,213 @@
-import { useState, useEffect } from 'react';
-import { OnboardingScreen } from './components/screens/OnboardingScreen';
-import { HomeScreen } from './components/screens/HomeScreen';
-import { QuizScreen } from './components/screens/QuizScreen';
-import { LeaderboardScreen } from './components/screens/LeaderboardScreen';
+import { useEffect, useMemo, useState } from 'react';
+
+import { AuthScreen } from './components/screens/AuthScreen';
 import { CampaignScreen } from './components/screens/CampaignScreen';
+import { HomeScreen } from './components/screens/HomeScreen';
+import { LeaderboardScreen } from './components/screens/LeaderboardScreen';
 import { ProfileScreen } from './components/screens/ProfileScreen';
-import { Viewer3DScreen } from './components/screens/Viewer3DScreen';
+import { QuizScreen } from './components/screens/QuizScreen';
 import { SettingsScreen } from './components/screens/SettingsScreen';
 import { TeacherDashboard } from './components/screens/TeacherDashboard';
+import { Viewer3DScreen } from './components/screens/Viewer3DScreen';
 import { Toaster } from './components/ui/sonner';
+import { apiHelpers } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import { Campaign, DashboardSummary, LeaderboardResponse, ProfileSummary, QuizSession } from './lib/api-types';
 
-type Screen = 
-  | 'onboarding' 
-  | 'home' 
-  | 'sprint' 
-  | 'campaign' 
-  | 'osce' 
-  | 'srs' 
-  | '3d-explorer' 
-  | 'leaderboard' 
+export type Screen =
+  | 'home'
+  | 'sprint'
+  | 'campaign'
+  | 'osce'
+  | 'srs'
+  | '3d-explorer'
+  | 'leaderboard'
   | 'profile'
   | 'settings'
   | 'teacher';
 
+const DARK_MODE_KEY = 'jogo-anatomia.dark-mode';
+
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding');
-  const [userProfile, setUserProfile] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const { user, accessToken, loading } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [darkMode, setDarkMode] = useState<boolean>(() => localStorage.getItem(DARK_MODE_KEY) === 'true');
 
   useEffect(() => {
-    // Check for saved profile
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      setUserProfile(savedProfile);
-      setCurrentScreen('home');
-    }
-
-    // Check for dark mode preference
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode === 'true') {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const handleOnboardingComplete = (profile: string) => {
-    setUserProfile(profile);
-    localStorage.setItem('userProfile', profile);
-    // Redirect teachers to teacher dashboard
-    if (profile === 'professor') {
-      setCurrentScreen('teacher');
-    } else {
-      setCurrentScreen('home');
-    }
-  };
-
-  const handleNavigate = (screen: Screen) => {
-    setCurrentScreen(screen);
-  };
-
-  const handleToggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', String(newDarkMode));
-    
-    if (newDarkMode) {
+    if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+  }, [darkMode]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    if (user.profile_type === 'professor') {
+      setCurrentScreen('teacher');
+    } else {
+      setCurrentScreen('home');
+    }
+  }, [user]);
+
+  const [dashboard, setDashboard] = useState<DashboardSummary | null>(null);
+  const [profileSummary, setProfileSummary] = useState<ProfileSummary | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+
+  useEffect(() => {
+    if (!accessToken) {
+      setDashboard(null);
+      setProfileSummary(null);
+      setLeaderboard(null);
+      setCampaigns([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadData() {
+      try {
+        const [dashboardResponse, profileResponse, leaderboardResponse, campaignsResponse] = await Promise.all([
+          apiHelpers.fetchDashboardSummary(accessToken),
+          apiHelpers.fetchProfileSummary(accessToken),
+          apiHelpers.fetchLeaderboard(accessToken),
+          apiHelpers.fetchCampaigns(accessToken),
+        ]);
+        if (!cancelled) {
+          setDashboard(dashboardResponse);
+          setProfileSummary(profileResponse);
+          setLeaderboard(leaderboardResponse);
+          setCampaigns(campaignsResponse);
+        }
+      } catch (error) {
+        console.error('Falha ao carregar dados iniciais', error);
+      }
+    }
+
+    loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
+
+  const quizSessionCache = useMemo(() => ({ current: null as QuizSession | null }), []);
+
+  const handleNavigate = (screen: Screen) => setCurrentScreen(screen);
+
+  const handleToggleDarkMode = async () => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem(DARK_MODE_KEY, String(next));
+
+    if (accessToken) {
+      try {
+        await apiHelpers.updatePreferences(accessToken, { dark_mode: next });
+      } catch (error) {
+        console.error('Nao foi possivel salvar a preferencia de tema', error);
+      }
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        Carregando
+      </div>
+    );
+  }
+
+  if (!user || !accessToken) {
+    return (
+      <>
+        <AuthScreen />
+        <Toaster />
+      </>
+    );
+  }
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'onboarding':
-        return <OnboardingScreen onComplete={handleOnboardingComplete} />;
-      
       case 'home':
-        return <HomeScreen onNavigate={handleNavigate} />;
-      
+        return <HomeScreen user={user} dashboard={dashboard} onNavigate={handleNavigate} />;
       case 'sprint':
-        return <QuizScreen mode="sprint" onExit={() => handleNavigate('home')} />;
-      
+        return (
+          <QuizScreen
+            mode="sprint"
+            token={accessToken}
+            sessionCache={quizSessionCache}
+            onExit={() => handleNavigate('home')}
+          />
+        );
       case 'campaign':
         return (
-          <CampaignScreen 
-            onBack={() => handleNavigate('home')} 
+          <CampaignScreen
+            token={accessToken}
+            campaigns={campaigns}
+            onBack={() => handleNavigate('home')}
             onStartLesson={() => handleNavigate('sprint')}
           />
         );
-      
       case 'osce':
-        return <QuizScreen mode="osce" onExit={() => handleNavigate('home')} />;
-      
-      case 'srs':
-        return <QuizScreen mode="srs" onExit={() => handleNavigate('home')} />;
-      
-      case '3d-explorer':
-        return <Viewer3DScreen onBack={() => handleNavigate('home')} />;
-      
-      case 'leaderboard':
-        return <LeaderboardScreen onBack={() => handleNavigate('home')} />;
-      
-      case 'profile':
-        return <ProfileScreen onBack={() => handleNavigate('home')} />;
-      
-      case 'settings':
         return (
-          <SettingsScreen 
-            onBack={() => handleNavigate('home')} 
-            darkMode={darkMode}
-            onToggleDarkMode={handleToggleDarkMode}
+          <QuizScreen
+            mode="osce"
+            token={accessToken}
+            sessionCache={quizSessionCache}
+            onExit={() => handleNavigate('home')}
           />
         );
-      
+      case 'srs':
+        return (
+          <QuizScreen
+            mode="srs"
+            token={accessToken}
+            sessionCache={quizSessionCache}
+            onExit={() => handleNavigate('home')}
+          />
+        );
+      case '3d-explorer':
+        return <Viewer3DScreen onBack={() => handleNavigate('home')} />;
+      case 'leaderboard':
+        return (
+          <LeaderboardScreen
+            data={leaderboard}
+            token={accessToken}
+            onBack={() => handleNavigate('home')}
+            onScopeChange={async (scope) => {
+              const response = await apiHelpers.fetchLeaderboard(accessToken, scope);
+              setLeaderboard(response);
+            }}
+          />
+        );
+      case 'profile':
+        return <ProfileScreen summary={profileSummary} onBack={() => handleNavigate('home')} />;
+      case 'settings':
+        return (
+          <SettingsScreen
+            user={user}
+            darkMode={darkMode}
+            onToggleDarkMode={handleToggleDarkMode}
+            onBack={() => handleNavigate('home')}
+          />
+        );
       case 'teacher':
-        return <TeacherDashboard onBack={() => handleNavigate('home')} />;
-      
+        return (
+          <TeacherDashboard
+            campaigns={campaigns}
+            leaderboard={leaderboard}
+            onBack={() => handleNavigate('home')}
+          />
+        );
       default:
-        return <HomeScreen onNavigate={handleNavigate} />;
+        return null;
     }
   };
 
   return (
-    <div className="size-full">
+    <div className="min-h-screen bg-background">
       {renderScreen()}
       <Toaster />
     </div>

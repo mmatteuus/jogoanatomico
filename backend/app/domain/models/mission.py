@@ -1,9 +1,8 @@
-from __future__ import annotations
-
-import enum
+﻿import enum
 import uuid
 from datetime import datetime
 
+from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship
 
 from .base import BaseSQLModel
@@ -24,7 +23,7 @@ class Mission(BaseSQLModel, table=True):
     frequency: MissionFrequency = Field(default=MissionFrequency.daily, nullable=False)
     category: str = Field(default="general", nullable=False)
 
-    progresses: list["MissionProgress"] = Relationship(back_populates="mission")
+    progresses: Mapped[list["MissionProgress"]] = Relationship(back_populates="mission")
 
 
 class MissionProgressStatus(str, enum.Enum):
@@ -41,8 +40,8 @@ class MissionProgress(BaseSQLModel, table=True):
     status: MissionProgressStatus = Field(default=MissionProgressStatus.pending, nullable=False)
     expires_at: datetime | None = Field(default=None)
 
-    mission: Mission = Relationship(back_populates="progresses")
-    user: "User" = Relationship(back_populates="missions")
+    mission: Mapped["Mission"] = Relationship(back_populates="progresses")
+    user: Mapped["User"] = Relationship(back_populates="missions")
 
 
 from .user import User  # noqa: E402

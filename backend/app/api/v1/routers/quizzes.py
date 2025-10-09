@@ -9,6 +9,8 @@ from app.api.dependencies import get_current_user, get_db_session
 from app.domain.schemas.quiz import (
     QuizAttemptCreate,
     QuizAttemptRead,
+    QuizOptionChoice,
+    QuizQuestionWithOptions,
     QuizSessionCreate,
     QuizSessionRead,
 )
@@ -24,7 +26,7 @@ async def create_quiz_session(
     session: AsyncSession = Depends(get_db_session),
     current_user=Depends(get_current_user),
 ):
-    quiz_session = await quiz_service.create_session(
+    quiz_session, questions = await quiz_service.create_session(
         session,
         current_user,
         payload.mode,
@@ -38,6 +40,17 @@ async def create_quiz_session(
         score=quiz_session.score,
         duration_seconds=quiz_session.duration_seconds,
         completed=quiz_session.completed,
+        questions=[
+            QuizQuestionWithOptions(
+                id=question.id,
+                prompt=question.prompt,
+                anatomy_system=question.anatomy_system,
+                type=question.type,
+                difficulty=question.difficulty,
+                options=[QuizOptionChoice(id=option.id, label=option.label) for option in question.options],
+            )
+            for question in questions
+        ],
     )
 
 
@@ -86,4 +99,5 @@ async def complete_session(
         score=quiz_session.score,
         duration_seconds=quiz_session.duration_seconds,
         completed=quiz_session.completed,
+        questions=[],
     )

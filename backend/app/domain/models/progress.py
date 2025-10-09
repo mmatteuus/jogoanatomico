@@ -1,9 +1,8 @@
-from __future__ import annotations
-
-import enum
+﻿import enum
 import uuid
 from datetime import date
 
+from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship
 
 from .base import BaseSQLModel
@@ -26,7 +25,7 @@ class UserSystemProgress(BaseSQLModel, table=True):
     completion_rate: float = Field(default=0.0)
     last_interaction: date | None = Field(default=None)
 
-    user: "User" = Relationship(back_populates="progress_records")
+    user: Mapped["User"] = Relationship(back_populates="progress_records")
 
 
 class CampaignProgressStatus(str, enum.Enum):
@@ -43,8 +42,8 @@ class CampaignProgress(BaseSQLModel, table=True):
     status: CampaignProgressStatus = Field(default=CampaignProgressStatus.not_started)
     score: float | None = Field(default=None)
 
-    lesson: "CampaignLesson" = Relationship(back_populates="progress_entries")
-    user: "User" = Relationship()
+    lesson: Mapped["CampaignLesson"] = Relationship(back_populates="progress_entries")
+    user: Mapped["User"] = Relationship()
 
 
 class QuizMode(str, enum.Enum):
@@ -64,8 +63,8 @@ class QuizSession(BaseSQLModel, table=True):
     duration_seconds: int = Field(default=0)
     completed: bool = Field(default=False)
 
-    attempts: list["QuizAttempt"] = Relationship(back_populates="session")
-    user: "User" = Relationship()
+    attempts: Mapped[list["QuizAttempt"]] = Relationship(back_populates="session")
+    user: Mapped["User"] = Relationship()
 
 
 class QuizAttempt(BaseSQLModel, table=True):
@@ -76,8 +75,8 @@ class QuizAttempt(BaseSQLModel, table=True):
     selected_option_id: uuid.UUID | None = Field(default=None, foreign_key="quiz_options.id")
     is_correct: bool = Field(default=False)
 
-    session: QuizSession = Relationship(back_populates="attempts")
-    question: "QuizQuestion" = Relationship()
+    session: Mapped["QuizSession"] = Relationship(back_populates="attempts")
+    question: Mapped["QuizQuestion"] = Relationship()
 
 
 from .user import User  # noqa: E402  (circular references)

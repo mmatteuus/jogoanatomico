@@ -3,13 +3,14 @@ from __future__ import annotations
 import uuid
 from typing import Optional
 
-from sqlalchemy import select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.logging import audit_logger
 from app.core.security import get_password_hash, verify_password
 from app.domain.models import User, UserRole
 from app.domain.schemas.user import UserCreate, UserUpdate
+
 
 async def get_user_by_email(session: AsyncSession, email: str) -> Optional[User]:
     result = await session.exec(select(User).where(User.email == email))

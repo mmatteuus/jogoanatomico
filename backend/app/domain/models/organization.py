@@ -1,7 +1,7 @@
-from __future__ import annotations
+﻿import uuid
+from typing import List
 
-import uuid
-
+from sqlalchemy.orm import Mapped
 from sqlmodel import Field, Relationship
 
 from .base import BaseSQLModel
@@ -13,7 +13,7 @@ class Organization(BaseSQLModel, table=True):
     name: str = Field(nullable=False, unique=True)
     kind: str = Field(default="school", nullable=False)
 
-    classrooms: list["Classroom"] = Relationship(back_populates="organization")
+    classrooms: Mapped[list["Classroom"]] = Relationship(back_populates="organization")
 
 
 class Classroom(BaseSQLModel, table=True):
@@ -23,8 +23,8 @@ class Classroom(BaseSQLModel, table=True):
     name: str = Field(nullable=False)
     invite_code: str = Field(nullable=False, unique=True, index=True)
 
-    organization: Organization = Relationship(back_populates="classrooms")
-    memberships: list["ClassroomMembership"] = Relationship(back_populates="classroom")
+    organization: Mapped["Organization"] = Relationship(back_populates="classrooms")
+    memberships: Mapped[list["ClassroomMembership"]] = Relationship(back_populates="classroom")
 
 
 class ClassroomMembership(BaseSQLModel, table=True):
@@ -34,8 +34,8 @@ class ClassroomMembership(BaseSQLModel, table=True):
     user_id: uuid.UUID = Field(foreign_key="users.id", nullable=False)
     role: str = Field(default="student", nullable=False)
 
-    classroom: Classroom = Relationship(back_populates="memberships")
-    user: "User" = Relationship(back_populates="classrooms")
+    classroom: Mapped["Classroom"] = Relationship(back_populates="memberships")
+    user: Mapped["User"] = Relationship(back_populates="classrooms")
 
 
 from .user import User  # noqa: E402

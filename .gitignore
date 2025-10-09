@@ -1,0 +1,23 @@
+﻿# Node front-end artifacts
+Anatomy Game Design System/node_modules/
+Anatomy Game Design System/dist/
+Anatomy Game Design System/.vite/
+
+# Python bytecode and caches
+**/__pycache__/
+*.py[cod]
+
+# Local environment files
+backend/.env
+backend/.venv/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.coverage
+backend/coverage.xml
+backend/test.db
+
+# IDE and OS metadata
+.vscode/
+.DS_Store
+Thumbs.db
+

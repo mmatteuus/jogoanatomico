@@ -3,7 +3,8 @@ from __future__ import annotations
 import uuid
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.domain.models import Campaign, CampaignLesson, CampaignProgress, CampaignProgressStatus, User
@@ -11,12 +12,18 @@ from app.domain.schemas.campaign import CampaignCreate
 
 
 async def list_campaigns(session: AsyncSession) -> List[Campaign]:
-    result = await session.exec(select(Campaign))
+    result = await session.exec(
+        select(Campaign).options(selectinload(Campaign.lessons))
+    )
     return result.unique().all()
 
 
 async def get_campaign(session: AsyncSession, campaign_id: uuid.UUID) -> Campaign | None:
-    result = await session.exec(select(Campaign).where(Campaign.id == campaign_id))
+    result = await session.exec(
+        select(Campaign)
+        .options(selectinload(Campaign.lessons))
+        .where(Campaign.id == campaign_id)
+    )
     campaign = result.first()
     if campaign:
         await session.refresh(campaign)

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     app_name: str = Field(default="AnatomyProAPI", alias="APP_NAME")
     api_v1_str: str = Field(default="/v1", alias="API_V1_STR")
-    project_env: Literal["local", "development", "staging", "production"] = Field(
+    project_env: Literal["local", "test", "development", "staging", "production"] = Field(
         default="local", alias="PROJECT_ENV"
     )
 
@@ -66,12 +66,16 @@ class Settings(BaseSettings):
         default_factory=lambda: ["anatomy-platform@mtsferreira.dev"], alias="SERVICE_OWNERS"
     )
 
-    _async_driver: ClassVar[str] = "postgresql+asyncpg"
-    _sync_driver: ClassVar[str] = "postgresql+psycopg"
+    _async_driver: ClassVar[str] = "mysql+asyncmy"
+    _sync_driver: ClassVar[str] = "mysql+pymysql"
 
     @staticmethod
     def _ensure_driver(url: str, driver: str) -> str:
         sa_url: URL = make_url(url)
+        backend = sa_url.get_backend_name()
+        target_backend = driver.split("+", 1)[0]
+        if backend != target_backend:
+            return url
         if sa_url.drivername == driver:
             return url
         sa_url = sa_url.set(drivername=driver)

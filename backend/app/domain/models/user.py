@@ -1,9 +1,9 @@
-from __future__ import annotations
-
-import enum
+﻿import enum
+import uuid
 from typing import Optional
 
 from sqlalchemy import Column
+from sqlalchemy.orm import Mapped
 from sqlalchemy.types import JSON
 from sqlmodel import Field, Relationship
 
@@ -36,17 +36,13 @@ class User(BaseSQLModel, table=True):
     streak: int = Field(default=0, nullable=False)
     energy: int = Field(default=5, nullable=False)
     elo_rating: int = Field(default=1200, nullable=False)
-    preferences: dict = Field(
-        sa_column=Column(JSON, nullable=False, server_default="{}")
-    )
+    preferences: dict = Field(sa_column=Column(JSON, nullable=False, server_default="{}"))
     organization_id: Optional[uuid.UUID] = Field(default=None, foreign_key="organizations.id")
 
-    progress_records: list["UserSystemProgress"] = Relationship(back_populates="user")
-    missions: list["MissionProgress"] = Relationship(back_populates="user")
-    classrooms: list["ClassroomMembership"] = Relationship(back_populates="user")
+    progress_records: Mapped[list["UserSystemProgress"]] = Relationship(back_populates="user")
+    missions: Mapped[list["MissionProgress"]] = Relationship(back_populates="user")
+    classrooms: Mapped[list["ClassroomMembership"]] = Relationship(back_populates="user")
 
-
-import uuid  # noqa: E402  # keep at bottom to avoid circular import issues
 
 from .progress import UserSystemProgress  # noqa: E402
 from .mission import MissionProgress  # noqa: E402

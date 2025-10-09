@@ -1,5 +1,4 @@
-from __future__ import annotations
-
+﻿
 from sqlmodel import Field
 
 from .base import BaseSQLModel

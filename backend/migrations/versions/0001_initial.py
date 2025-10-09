@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column("streak", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("energy", sa.Integer(), nullable=False, server_default="5"),
         sa.Column("elo_rating", sa.Integer(), nullable=False, server_default="1200"),
-        sa.Column("preferences", sa.JSON(), nullable=False, server_default="{}"),
+        sa.Column("preferences", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
         sa.Column("organization_id", sa.Uuid(), nullable=True),
     )
     op.create_index("ix_users_email", "users", ["email"], unique=True)
@@ -108,7 +108,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("campaign_id", sa.Uuid(), nullable=False),
-        sa.Column("order", sa.Integer(), nullable=False),
+        sa.Column("lesson_order", sa.Integer(), nullable=False),
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("content_url", sa.String(), nullable=False),
         sa.Column("duration_minutes", sa.Integer(), nullable=False),
@@ -162,7 +162,7 @@ def upgrade() -> None:
         sa.Column("system", sa.String(), nullable=True),
         sa.Column("score", sa.Float(), nullable=False, server_default="0"),
         sa.Column("duration_seconds", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("completed", sa.Boolean(), nullable=False, server_default=sa.text("false")),
+        sa.Column("completed", sa.Boolean(), nullable=False, server_default=sa.text("0")),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
     )
 
@@ -202,7 +202,7 @@ def upgrade() -> None:
         sa.Column("system", sa.String(), nullable=False),
         sa.Column("region", sa.String(), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column("tags", sa.JSON(), nullable=False, server_default="[]"),
+        sa.Column("tags", sa.JSON(), nullable=False, server_default=sa.text("'[]'")),
         sa.Column("asset_uri", sa.String(), nullable=True),
     )
 
@@ -213,7 +213,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("structure_id", sa.Uuid(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
-        sa.Column("visible", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column("visible", sa.Boolean(), nullable=False, server_default=sa.text("1")),
         sa.ForeignKeyConstraint(["structure_id"], ["anatomy_structures.id"], ondelete="CASCADE"),
     )
 
@@ -225,7 +225,7 @@ def upgrade() -> None:
         sa.Column("scope", sa.String(), nullable=False),
         sa.Column("reference_id", sa.Uuid(), nullable=True),
         sa.Column("generated_at", sa.DateTime(), nullable=False),
-        sa.Column("data", sa.JSON(), nullable=False, server_default="{}"),
+        sa.Column("data", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
     )
 
     op.create_table(
@@ -236,7 +236,7 @@ def upgrade() -> None:
         sa.Column("target_url", sa.String(), nullable=False),
         sa.Column("secret", sa.String(), nullable=False),
         sa.Column("event", sa.String(), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")),
+        sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("1")),
     )
 
 

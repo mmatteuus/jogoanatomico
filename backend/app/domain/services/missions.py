@@ -4,7 +4,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.domain.models import Mission, MissionFrequency, MissionProgress, MissionProgressStatus, User
@@ -19,6 +20,7 @@ async def get_active_missions(session: AsyncSession, user: User) -> List[Mission
     result = await session.exec(
         select(MissionProgress)
         .where(MissionProgress.user_id == user.id)
+        .options(selectinload(MissionProgress.mission))
         .join(Mission)
         .order_by(Mission.title)
     )
@@ -51,7 +53,7 @@ async def seed_default_missions(session: AsyncSession, user: User) -> List[Missi
         },
         {
             "title": "Estude um Sistema",
-            "description": "Complete uma lição da campanha",
+            "description": "Complete uma licao da campanha",
             "xp_reward": 150,
             "target": 1,
             "frequency": MissionFrequency.daily,
@@ -97,7 +99,7 @@ async def increment_progress(
     result = await session.exec(
         select(MissionProgress).where(
             MissionProgress.user_id == user.id, MissionProgress.mission_id == mission_id
-        )
+        ).options(selectinload(MissionProgress.mission))
     )
     progress = result.first()
     if not progress:

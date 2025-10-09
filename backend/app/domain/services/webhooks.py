@@ -7,7 +7,7 @@ from hashlib import sha256
 from typing import Dict
 
 import httpx
-from sqlalchemy import select
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.domain.models import WebhookSubscriptionModel

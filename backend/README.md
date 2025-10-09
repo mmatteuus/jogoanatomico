@@ -1,22 +1,20 @@
 # Anatomy Pro API
 
-Plataforma backend escalável para suportar o jogo educativo Anatomy Pro. A API é construída com FastAPI, segue princípios 12-Factor e expõe contratos REST documentados via OpenAPI 3.1.
+Backend platform que sustenta o **Jogo de Anatomia**. A API e escrita em FastAPI, segue praticas 12-Factor e expoe um contrato REST em OpenAPI 3.1.
 
-## Visão Geral
+## Visao Geral
+- **Linguagem**: Python 3.11 / FastAPI  
+- **Banco**: MySQL 8 (migrations Alembic)  
+- **Cache & rate limiting**: Redis  
+- **Observabilidade**: Prometheus, OTLP, logs estruturados  
+- **Autenticacao**: JWT + refresh tokens, RBAC (student, professional, teacher, admin)  
+- **Dominio**: usuarios, progresso por sistema, missoes, campanhas, quizzes, leaderboard, salas e webhooks
 
-- **Linguagem**: Python 3.11 / FastAPI
-- **Banco**: PostgreSQL 16 (migrations via Alembic)
-- **Cache/Mensageria**: Redis para rate limiting e cache
-- **Observabilidade**: Logs estruturados, métricas Prometheus, tracing OTLP
-- **Autenticação**: JWT com refresh token, RBAC (student, professional, teacher, admin)
-- **Domínio**: usuários, progressão por sistemas, missões, campanhas, quizzes, rankings, assets anatômicos, salas de aula e webhooks
-
-## Como rodar localmente
-
+## Desenvolvimento local
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install --upgrade pip
 pip install .[dev]
 cp .env.example .env
@@ -24,74 +22,71 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
-Ou utilize o Docker Compose:
-
+Ou via Docker Compose:
 ```bash
 cd backend
 docker compose up --build
 ```
+API: `http://localhost:8000` - Swagger: `http://localhost:8000/docs`.
 
-A API estará disponível em `http://localhost:8000`. O Swagger UI pode ser acessado em `http://localhost:8000/docs`.
+## Integracao com o MySQL remoto (Napoleon/cPanel)
+- Host oficial: `186.209.113.112`
+- Usuario/banco padrao: `tecc3463_jogoanatomia`
+- Senha: `tecc3463_jogoanatomia`
 
-## Integração com banco Neon
+Configure o `.env` com as URLs ja preparadas no `.env.example`:
+```
+DATABASE_URL=mysql+asyncmy://tecc3463_jogoanatomia:tecc3463_jogoanatomia@186.209.113.112:3306/tecc3463_jogoanatomia?charset=utf8mb4
+SYNC_DATABASE_URL=mysql+pymysql://tecc3463_jogoanatomia:tecc3463_jogoanatomia@186.209.113.112:3306/tecc3463_jogoanatomia?charset=utf8mb4
+```
+Pre-requisitos no cPanel:
+1. Em **Remote MySQL**, libere o IP do servidor/backend que fara a conexao.
+2. Garanta que o usuario `tecc3463_jogoanatomia` possua privilegios no banco `tecc3463_jogoanatomia`.
+3. A porta 3306 precisa estar liberada no firewall do seu ambiente.
 
-- Solicite no painel Neon uma connection string para o projeto (ex.: `postgresql://...neon.tech/neondb?sslmode=require`).
-- No arquivo `.env`, informe `DATABASE_URL` com a string recebida. O serviço converte automaticamente para o driver assíncrono `asyncpg` e configura `pool_pre_ping` e `NullPool` para respeitar os limites serverless do Neon.
-- O `sslmode=require` é reconhecido e mapeado para conexões TLS (`ssl=True`). Caso deseje uma string diferente para o Alembic, defina `SYNC_DATABASE_URL`; se omitido, o mesmo valor de `DATABASE_URL` é reutilizado com o driver `psycopg`.
-- Para ambientes que utilizam o Stack Auth, configure também:
-  - `STACK_PROJECT_ID`
-  - `STACK_JWKS_URL` (por exemplo `https://api.stack-auth.com/api/v1/projects/<id>/.well-known/jwks.json`)
-  - `STACK_ALLOWED_AUDIENCES` e `STACK_ALLOWED_ISSUERS` caso seja necessário restringir a validação.
+### Scripts uteis
+- `python scripts/install_schema.py` - aplica as migrations na instancia remota.
+- `python scripts/seed_data.py` - popula campanhas, questoes e usuarios demo.
 
-> **Importante**: nunca versione secrets reais. Utilize `.env.local` ou variáveis de ambiente seguras nos ambientes gerenciados.
+## Estrutura
+- `app/core`: configuracao, seguranca, eventos
+- `app/domain`: modelos SQLModel, schemas Pydantic e servicos
+- `app/api`: routers versionados, dependencias, middlewares
+- `app/infrastructure`: banco, cache, observabilidade, storage
+- `migrations`: historico Alembic
+- `scripts`: ferramentas auxiliares (OpenAPI, seeds, schema installer)
+- `tests`: unitarios, integracao e contrato
 
-## Estrutura do Projeto
-
-- `app/core`: configuração, segurança, eventos
-- `app/domain`: modelos, esquemas e serviços
-- `app/api`: routers versionados, dependências e middlewares
-- `app/infrastructure`: banco, cache, jobs, observabilidade, storage
-- `migrations`: gerenciamento de schema com Alembic
-- `tests`: unitários, integração e contrato
-- `scripts/export_openapi.py`: gera o `openapi.yaml`
-
-## Fluxo de Desenvolvimento
-
-1. Defina variáveis em `.env` (baseado em `.env.example`).
-2. Execute `alembic upgrade head` para preparar o banco.
-3. Rode `ruff check app`, `mypy app` e `pytest` antes de enviar PR.
-4. Gere o contrato com `python scripts/export_openapi.py`.
+## Fluxo de trabalho
+1. Configure `.env` (baseado em `.env.example`).
+2. Rode `alembic upgrade head` antes de subir o app.
+3. Execute lint/typing/tests (`ruff`, `mypy`, `pytest`).
+4. Gere o contrato com `python scripts/export_openapi.py` quando necessario.
 
 ## Testes
-
 ```bash
 cd backend
 pytest --asyncio-mode=auto --cov=app
 ```
-
-Os testes de integração usam SQLite assíncrono para velocidade, mantendo compatibilidade com PostgreSQL via Alembic.
+Os testes usam SQLite assincrono para velocidade, mantendo compatibilidade de schema com MySQL.
 
 ## Observabilidade
-
-- Métricas expostas em `/metrics`
-- Traces enviados via OTLP (collector configurado em `docker-compose.yml`)
+- Metricas expostas em `/metrics`
+- Tracing via OTLP (configuravel em `docker-compose.yml`)
 - Logs estruturados com `structlog`
 
-## Segurança
-
+## Seguranca
 - Rate limiting com Redis
-- Auditoria básica via `AuditLogger`
-- Webhooks com assinatura HMAC (`X-Anatomy-Signature`)
-- Lista de verificações OWASP ASVS nível 2 no arquivo `docs/security-checklist.md`
+- Audit log basico via `AuditLogger`
+- Webhooks assinados (`X-Anatomy-Signature`)
+- Checklist OWASP ASVS L2 em `docs/security-checklist.md`
 
 ## Deploy
+CI executa lint, type-check, testes, cobertura e valida OpenAPI (`.github/workflows/ci.yml`). Use o `Dockerfile` oficial para gerar imagens de producao.
 
-O pipeline GitHub Actions (`.github/workflows/ci.yml`) executa lint, type-check, testes, cobertura e validação do contrato OpenAPI. A imagem Docker pode ser publicada a partir do `Dockerfile` oficial.
-
-## Melhorias Futuras
-
-- Implementar fila para envio assíncrono de webhooks e notificações
-- Adicionar trilhas de auditoria persistentes e dashboards Grafana pré-configurados
-- Introduzir verificação de integridade de assets 3D e CDN para distribuição
+## Roadmap
+- Fila para webhooks/notifications
+- Auditing persistente + dashboards Grafana
+- Verificacao de integridade para assets 3D/CDN
 
 Desenvolvido por MtsFerreira

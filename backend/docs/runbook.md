@@ -1,33 +1,34 @@
 # Runbook - Anatomy Pro API
 
 ## Health Checks
-- **Liveness**: `GET /v1/health/live`
-- **Readiness**: `GET /v1/health/ready`
-- **Métricas**: `GET /metrics`
+- Liveness: `GET /v1/health/live`
+- Readiness: `GET /v1/health/ready`
+- Metricas: `GET /metrics`
 
-## Rotina de Operação
-1. Garantir variáveis de ambiente configuradas (consultar `.env.example`).
-2. Executar `alembic upgrade head` após deploys.
-3. Monitorar logs estruturados (JSON) enviados para stdout.
-4. Acompanhar métricas básicas: taxa de erro HTTP 5xx, latência p95 (`http_request_duration_seconds`).
-5. Traces disponíveis via OTLP Collector (Jaeger/Grafana Tempo).
+## Rotina de operacao
+1. Confirme variaveis em `.env` (vide `.env.example`).
+2. Execute `alembic upgrade head` apos cada deploy.
+3. Monitore logs JSON no stdout.
+4. Acompanhe metricas: taxa HTTP 5xx e `http_request_duration_seconds` p95.
+5. Tracing disponivel via OTLP Collector (Jaeger, Tempo, etc.).
 
-## Resposta a Incidentes
-- **Falha no banco**: verificar container `postgres`; restaurar backup; executar `alembic current` para checar versão.
-- **Rate limiting excessivo**: ajustar `RATE_LIMIT_PER_MINUTE` e limpar chaves Redis `rate:*`.
-- **Webhooks falhando**: consultar logs com `logger=audit` e reprocessar via `POST /v1/webhooks/test`.
-- **Métricas ausentes**: confirmar serviço OTLP em execução; fallback para logs.
+## Incidentes comuns
+- **Banco indisponivel**: testar `mysql -h 186.209.113.112 -u tecc3463_jogoanatomia -p`; restaurar backup e rodar `alembic current` para conferir schema.
+- **Acesso negado**: revisar lista de IPs em *Remote MySQL* no cPanel e credenciais no `.env`.
+- **Rate limiting**: ajustar `RATE_LIMIT_PER_MINUTE` e limpar chaves `rate:*` no Redis.
+- **Webhooks falhando**: inspecione logs (`logger=audit`) e reenvie via `POST /v1/webhooks/test`.
+- **Metricas ausentes**: verifique o collector OTLP; se indisponivel, use logs como fallback.
 
 ## Rollback
-1. Identificar versão do schema com `alembic current`.
-2. Rodar `alembic downgrade <tag>` para reverter.
-3. Redeploy da imagem anterior.
+1. Descubra a revisao atual com `alembic current`.
+2. Rode `alembic downgrade <tag>`.
+3. Volte a imagem/container anterior.
 
 ## Backups
-- Postgres: snapshots diários (não automatizados neste repo, recomendação: pg_dump + storage).
-- Redis: ajustar `appendonly yes` em produção.
+- MySQL: `mysqldump --single-transaction --routines tecc3463_jogoanatomia` diariamente para storage externo.
+- Redis: habilite `appendonly yes` em producao para garantir persistencia.
 
-## SLAs/SLOs recomendados
-- Disponibilidade API: 99.5%
-- Latência p95: < 300ms para endpoints críticos (`/dashboard/summary`, `/quizzes/sessions`).
-- Erro 5xx: < 1% das requisições.
+## SLOs sugeridos
+- Disponibilidade: 99,5%
+- Latencia p95: < 300 ms para `/dashboard/summary` e `/quizzes/sessions`
+- Erros 5xx: < 1% das requisicoes
